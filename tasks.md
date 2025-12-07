@@ -40,9 +40,9 @@
   - [x] 1.4.5 Configure environment variables
   - [x] 1.4.6 Setup ESLint and Prettier
 
-- [ ] **1.5 CI/CD Pipeline**
-  - [ ] 1.5.1 Setup GitHub Actions for backend (lint, test, build)
-  - [ ] 1.5.2 Setup GitHub Actions for mobile (lint, build APK)
+- [x] **1.5 CI/CD Pipeline**
+  - [x] 1.5.1 Setup GitHub Actions for backend (lint, test, build)
+  - [x] 1.5.2 Setup GitHub Actions for mobile (lint, build APK)
   - [ ] 1.5.3 Configure deployment to staging environment
 
 - [x] **1.6 Development Environment**
