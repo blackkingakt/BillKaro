@@ -8,12 +8,15 @@ import {
     SafeAreaView,
     KeyboardAvoidingView,
     Platform,
+    Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import * as Keychain from 'react-native-keychain';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../constants';
 import { useAppDispatch } from '../../hooks/useRedux';
-import { setUser, setBusiness } from '../../store/slices/authSlice';
+import { setUser, setBusiness, setLoading } from '../../store/slices/authSlice';
+import { verifyOTP, sendOTP } from '../../api/auth';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'OTPVerification'>;
 
@@ -64,26 +67,46 @@ const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) => {
 
     const handleVerifyOTP = async (otpCode: string) => {
         setIsLoading(true);
+        dispatch(setLoading(true));
+
         try {
-            // TODO: Call API to verify OTP
-            // const response = await api.post('/auth/verify-otp', { phone, countryCode, otp: otpCode });
+            const result = await verifyOTP(phone, otpCode, countryCode);
 
-            // Mock success - replace with actual API call
-            dispatch(setUser({
-                id: '1',
-                phone,
-                countryCode,
-                isVerified: true,
-            }));
+            if (result.success && result.data) {
+                // Store tokens securely
+                await Keychain.setGenericPassword('accessToken', result.data.accessToken);
+                await Keychain.setGenericPassword('refreshToken', result.data.refreshToken, {
+                    service: 'refreshToken',
+                });
 
-            // Check if user has business, if not navigation will show BusinessSetup
-            // dispatch(setBusiness(response.data.business));
+                // Update Redux state
+                dispatch(setUser({
+                    id: result.data.user.id,
+                    phone: result.data.user.phone,
+                    countryCode: result.data.user.countryCode,
+                    isVerified: result.data.user.isVerified,
+                }));
 
+                if (result.data.business) {
+                    dispatch(setBusiness({
+                        id: result.data.business.id,
+                        name: result.data.business.name,
+                        gstin: result.data.business.gstin,
+                        logoUrl: result.data.business.logoUrl,
+                    }));
+                }
+            } else {
+                Alert.alert('Error', result.message);
+                // Clear OTP inputs on error
+                setOtp(new Array(OTP_LENGTH).fill(''));
+                inputRefs.current[0]?.focus();
+            }
         } catch (error) {
             console.error('Error verifying OTP:', error);
-            // Show error
+            Alert.alert('Error', 'Failed to verify OTP. Please try again.');
         } finally {
             setIsLoading(false);
+            dispatch(setLoading(false));
         }
     };
 
@@ -91,13 +114,19 @@ const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) => {
         if (resendTimer > 0) return;
 
         try {
-            // TODO: Call API to resend OTP
-            // await api.post('/auth/send-otp', { phone, countryCode });
-            setResendTimer(30);
-            setOtp(new Array(OTP_LENGTH).fill(''));
-            inputRefs.current[0]?.focus();
+            const result = await sendOTP(phone, countryCode);
+
+            if (result.success) {
+                setResendTimer(30);
+                setOtp(new Array(OTP_LENGTH).fill(''));
+                inputRefs.current[0]?.focus();
+                Alert.alert('Success', 'OTP sent successfully');
+            } else {
+                Alert.alert('Error', result.message);
+            }
         } catch (error) {
             console.error('Error resending OTP:', error);
+            Alert.alert('Error', 'Failed to resend OTP. Please try again.');
         }
     };
 
@@ -112,6 +141,7 @@ const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) => {
                     <TouchableOpacity
                         style={styles.backButton}
                         onPress={() => navigation.goBack()}
+                        disabled={isLoading}
                     >
                         <Text style={styles.backButtonText}>← Back</Text>
                     </TouchableOpacity>
@@ -140,6 +170,7 @@ const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) => {
                                 value={digit}
                                 onChangeText={(value) => handleOtpChange(value, index)}
                                 onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
+                                editable={!isLoading}
                             />
                         ))}
                     </View>
@@ -151,7 +182,7 @@ const OTPVerificationScreen: React.FC<Props> = ({ route, navigation }) => {
                                 Resend code in {resendTimer}s
                             </Text>
                         ) : (
-                            <TouchableOpacity onPress={handleResendOTP}>
+                            <TouchableOpacity onPress={handleResendOTP} disabled={isLoading}>
                                 <Text style={styles.resendButton}>Resend Code</Text>
                             </TouchableOpacity>
                         )}

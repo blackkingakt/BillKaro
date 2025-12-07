@@ -8,6 +8,7 @@ import { store } from './src/store';
 import RootNavigator from './src/navigation/RootNavigator';
 import { setInitialized, setUser, setBusiness } from './src/store/slices/authSlice';
 import { COLORS } from './src/constants';
+import { getMe } from './src/api/auth';
 
 // App initialization component
 const AppContent: React.FC = () => {
@@ -22,11 +23,40 @@ const AppContent: React.FC = () => {
 
       if (credentials && credentials.password) {
         // Token exists - validate and get user data
-        // TODO: Call API to validate token and get user/business data
-        // For now, just set initialized
+        const result = await getMe();
+
+        if (result.success && result.data) {
+          // User is authenticated
+          store.dispatch(setUser({
+            id: result.data.user.id,
+            phone: result.data.user.phone,
+            countryCode: result.data.user.countryCode,
+            isVerified: result.data.user.isVerified,
+          }));
+
+          if (result.data.business) {
+            store.dispatch(setBusiness({
+              id: result.data.business.id,
+              name: result.data.business.name,
+              gstin: result.data.business.gstin,
+              logoUrl: result.data.business.logoUrl,
+            }));
+          }
+        } else {
+          // Token invalid - clear stored credentials
+          await Keychain.resetGenericPassword();
+          await Keychain.resetGenericPassword({ service: 'refreshToken' });
+        }
       }
     } catch (error) {
       console.error('Error initializing app:', error);
+      // Clear any stored credentials on error
+      try {
+        await Keychain.resetGenericPassword();
+        await Keychain.resetGenericPassword({ service: 'refreshToken' });
+      } catch (e) {
+        // Ignore cleanup errors
+      }
     } finally {
       // Mark app as initialized
       store.dispatch(setInitialized(true));

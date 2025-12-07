@@ -2,7 +2,11 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
 import { config } from './config';
+
+// Import routes
+import authRoutes from './routes/authRoutes';
 
 // Initialize Express app
 const app: Application = express();
@@ -25,6 +29,32 @@ app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Rate limiting for auth routes
+const authRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20, // limit each IP to 20 requests per windowMs
+    message: {
+        success: false,
+        message: 'Too many requests, please try again later',
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Global rate limiter
+const globalRateLimiter = rateLimit({
+    windowMs: config.rateLimit.windowMs,
+    max: config.rateLimit.maxRequests,
+    message: {
+        success: false,
+        message: 'Too many requests, please try again later',
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.use(globalRateLimiter);
+
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
     res.status(200).json({
@@ -34,8 +64,8 @@ app.get('/health', (req: Request, res: Response) => {
     });
 });
 
-// API Routes (will be added later)
-// app.use('/api/v1/auth', authRoutes);
+// API Routes
+app.use('/api/v1/auth', authRateLimiter, authRoutes);
 // app.use('/api/v1/business', businessRoutes);
 // app.use('/api/v1/customers', customerRoutes);
 // app.use('/api/v1/products', productRoutes);

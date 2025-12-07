@@ -8,10 +8,12 @@ import {
     SafeAreaView,
     KeyboardAvoidingView,
     Platform,
+    Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../constants';
+import { sendOTP } from '../../api/auth';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PhoneInput'>;
 
@@ -22,17 +24,22 @@ const PhoneInputScreen: React.FC<Props> = ({ navigation }) => {
 
     const handleSendOTP = async () => {
         if (phone.length !== 10) {
-            // Show error
+            Alert.alert('Error', 'Please enter a valid 10-digit phone number');
             return;
         }
 
         setIsLoading(true);
         try {
-            // TODO: Call API to send OTP
-            // await api.post('/auth/send-otp', { phone, countryCode });
-            navigation.navigate('OTPVerification', { phone, countryCode });
+            const result = await sendOTP(phone, countryCode);
+
+            if (result.success) {
+                navigation.navigate('OTPVerification', { phone, countryCode });
+            } else {
+                Alert.alert('Error', result.message);
+            }
         } catch (error) {
             console.error('Error sending OTP:', error);
+            Alert.alert('Error', 'Failed to send OTP. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -70,19 +77,20 @@ const PhoneInputScreen: React.FC<Props> = ({ navigation }) => {
                                 maxLength={10}
                                 value={phone}
                                 onChangeText={setPhone}
+                                editable={!isLoading}
                             />
                         </View>
 
                         <TouchableOpacity
                             style={[
                                 styles.button,
-                                phone.length !== 10 && styles.buttonDisabled,
+                                (phone.length !== 10 || isLoading) && styles.buttonDisabled,
                             ]}
                             onPress={handleSendOTP}
                             disabled={phone.length !== 10 || isLoading}
                         >
                             <Text style={styles.buttonText}>
-                                {isLoading ? 'Sending...' : 'Continue'}
+                                {isLoading ? 'Sending OTP...' : 'Continue'}
                             </Text>
                         </TouchableOpacity>
                     </View>

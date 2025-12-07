@@ -53,26 +53,26 @@
 ---
 
 ### 2. Authentication Module
-- [ ] **2.1 Backend: OTP Service**
-  - [ ] 2.1.1 Integrate SMS gateway (MSG91 or Twilio)
-  - [ ] 2.1.2 Create OTP generation utility (6-digit, 5-min expiry)
-  - [ ] 2.1.3 Create OTP storage (Redis or database)
-  - [ ] 2.1.4 Implement rate limiting for OTP requests
+- [x] **2.1 Backend: OTP Service**
+  - [ ] 2.1.1 Integrate SMS gateway (MSG91 or Twilio) - Mock implementation ready
+  - [x] 2.1.2 Create OTP generation utility (6-digit, 5-min expiry)
+  - [x] 2.1.3 Create OTP storage (Redis or database)
+  - [x] 2.1.4 Implement rate limiting for OTP requests
 
-- [ ] **2.2 Backend: Auth APIs**
-  - [ ] 2.2.1 POST /auth/send-otp - Send OTP to phone number
-  - [ ] 2.2.2 POST /auth/verify-otp - Verify OTP and return JWT
-  - [ ] 2.2.3 POST /auth/refresh-token - Refresh access token
-  - [ ] 2.2.4 POST /auth/logout - Invalidate refresh token
-  - [ ] 2.2.5 Create JWT middleware for protected routes
+- [x] **2.2 Backend: Auth APIs**
+  - [x] 2.2.1 POST /auth/send-otp - Send OTP to phone number
+  - [x] 2.2.2 POST /auth/verify-otp - Verify OTP and return JWT
+  - [x] 2.2.3 POST /auth/refresh-token - Refresh access token
+  - [x] 2.2.4 POST /auth/logout - Invalidate refresh token
+  - [x] 2.2.5 Create JWT middleware for protected routes
 
-- [ ] **2.3 Mobile: Auth Screens**
-  - [ ] 2.3.1 Create PhoneInputScreen with country code picker
-  - [ ] 2.3.2 Create OTPVerificationScreen with auto-read
-  - [ ] 2.3.3 Implement resend OTP with countdown timer
-  - [ ] 2.3.4 Store JWT securely (react-native-keychain)
-  - [ ] 2.3.5 Implement auto-login on app launch
-  - [ ] 2.3.6 Handle auth errors gracefully
+- [x] **2.3 Mobile: Auth Screens**
+  - [x] 2.3.1 Create PhoneInputScreen with country code picker
+  - [x] 2.3.2 Create OTPVerificationScreen with auto-read
+  - [x] 2.3.3 Implement resend OTP with countdown timer
+  - [x] 2.3.4 Store JWT securely (react-native-keychain)
+  - [x] 2.3.5 Implement auto-login on app launch
+  - [x] 2.3.6 Handle auth errors gracefully
 
 ---
 
