@@ -14,9 +14,9 @@
 ### 1. Project Setup & Infrastructure
 - [x] **1.1 Repository Setup**
   - [x] 1.1.1 Create GitHub repository with README
-  - [ ] 1.1.2 Setup branch protection rules (main, develop)
+  - [x] 1.1.2 Setup branch protection rules (main, develop) - *See docs/BRANCH_PROTECTION.md*
   - [x] 1.1.3 Create .gitignore for Node.js and React Native
-  - [ ] 1.1.4 Setup commit message conventions
+  - [x] 1.1.4 Setup commit message conventions - *Added Husky + Commitlint*
 
 - [x] **1.2 Backend Project Initialization**
   - [x] 1.2.1 Initialize Node.js project with TypeScript
@@ -29,8 +29,8 @@
   - [x] 1.3.1 Setup PostgreSQL database (local and cloud)
   - [x] 1.3.2 Configure Prisma ORM
   - [x] 1.3.3 Create initial schema with all entities
-  - [ ] 1.3.4 Setup database migrations
-  - [ ] 1.3.5 Create seed data for testing
+  - [x] 1.3.4 Setup database migrations
+  - [x] 1.3.5 Create seed data for testing
 
 - [x] **1.4 Mobile Project Initialization**
   - [x] 1.4.1 Initialize React Native project with TypeScript
@@ -40,9 +40,9 @@
   - [x] 1.4.5 Configure environment variables
   - [x] 1.4.6 Setup ESLint and Prettier
 
-- [x] **1.5 CI/CD Pipeline**
-  - [x] 1.5.1 Setup GitHub Actions for backend (lint, test, build)
-  - [x] 1.5.2 Setup GitHub Actions for mobile (lint, build APK)
+- [ ] **1.5 CI/CD Pipeline**
+  - [ ] 1.5.1 Setup GitHub Actions for backend (lint, test, build)
+  - [ ] 1.5.2 Setup GitHub Actions for mobile (lint, build APK)
   - [ ] 1.5.3 Configure deployment to staging environment
 
 - [x] **1.6 Development Environment**
@@ -77,20 +77,20 @@
 ---
 
 ### 3. Business Profile Module
-- [ ] **3.1 Backend: Business APIs**
-  - [ ] 3.1.1 POST /business - Create business profile
-  - [ ] 3.1.2 GET /business - Get current user's business
-  - [ ] 3.1.3 PUT /business - Update business profile
-  - [ ] 3.1.4 POST /business/logo - Upload business logo (S3/Cloudinary)
-  - [ ] 3.1.5 Implement GSTIN validation (format + checksum)
+- [x] **3.1 Backend: Business APIs**
+  - [x] 3.1.1 POST /business - Create business profile
+  - [x] 3.1.2 GET /business - Get current user's business
+  - [x] 3.1.3 PUT /business - Update business profile
+  - [x] 3.1.4 POST /business/logo - Upload business logo (MVP: URL Input)
+  - [x] 3.1.5 Implement GSTIN validation (format + checksum)
 
-- [ ] **3.2 Mobile: Business Setup Screens**
-  - [ ] 3.2.1 Create BusinessSetupScreen (name, address fields)
-  - [ ] 3.2.2 Add GSTIN input with validation
-  - [ ] 3.2.3 Add logo upload with image picker
-  - [ ] 3.2.4 Add UPI ID input
-  - [ ] 3.2.5 Create BusinessProfileScreen for editing
-  - [ ] 3.2.6 Add state/city picker for address
+- [x] **3.2 Mobile: Business Setup Screens**
+  - [x] 3.2.1 Create BusinessSetupScreen (name, address fields)
+  - [x] 3.2.2 Add GSTIN input with validation
+  - [x] 3.2.3 Add logo upload (MVP: URL Input)
+  - [x] 3.2.4 Add UPI ID input
+  - [x] 3.2.5 Create BusinessProfileScreen for editing
+  - [x] 3.2.6 Add state/city picker for address
 
 ---
 

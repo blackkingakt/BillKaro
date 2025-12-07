@@ -1,0 +1,27 @@
+{
+  "name": "billkaro",
+  "version": "1.0.0",
+  "description": "A mobile-first, WhatsApp-integrated invoicing and customer management platform designed specifically for Indian micro-businesses.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blackkingakt/BillKaro.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/blackkingakt/BillKaro/issues"
+  },
+  "homepage": "https://github.com/blackkingakt/BillKaro#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
+    "husky": "^9.1.7"
+  }
+}

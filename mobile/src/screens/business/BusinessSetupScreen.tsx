@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -7,19 +7,29 @@ import {
     StyleSheet,
     SafeAreaView,
     ScrollView,
+    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../constants';
+// Added useAppSelector to get user ID if needed, though API handles it via token
 import { useAppDispatch } from '../../hooks/useRedux';
 import { setBusiness } from '../../store/slices/authSlice';
+import { businessApi, BusinessInput } from '../../api/business';
+import { validateGSTIN, validateEmail, validatePhone } from '../../utils/validation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BusinessSetup'>;
 
-const BusinessSetupScreen: React.FC<Props> = () => {
+const BusinessSetupScreen: React.FC<Props> = ({ navigation, route }) => {
     const dispatch = useAppDispatch();
+    const isEditing = route.params?.isEditing;
+
     const [isLoading, setIsLoading] = useState(false);
-    const [form, setForm] = useState({
+    const [isFetching, setIsFetching] = useState(false);
+    const [logoUrl, setLogoUrl] = useState('');
+
+    const [form, setForm] = useState<BusinessInput>({
         name: '',
         gstin: '',
         phone: '',
@@ -30,35 +40,128 @@ const BusinessSetupScreen: React.FC<Props> = () => {
         pincode: '',
     });
 
-    const updateField = (field: string, value: string) => {
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+    useEffect(() => {
+        if (isEditing) {
+            fetchBusinessDetails();
+        }
+    }, [isEditing]);
+
+    const fetchBusinessDetails = async () => {
+        setIsFetching(true);
+        try {
+            const response = await businessApi.getBusiness();
+            if (response.success && response.data) {
+                const data = response.data;
+                setForm({
+                    name: data.name,
+                    gstin: data.gstin || '',
+                    phone: data.phone || '',
+                    email: data.email || '',
+                    addressLine1: data.addressLine1 || '',
+                    addressLine2: data.addressLine2 || '',
+                    city: data.city || '',
+                    state: data.state || '',
+                    pincode: data.pincode || '',
+                    website: data.website || '',
+                    upiId: data.upiId || '',
+                    bankName: data.bankName || '',
+                    bankAccountNo: data.bankAccountNo || '',
+                    bankIfsc: data.bankIfsc || '',
+                });
+                setLogoUrl(data.logoUrl || '');
+            }
+        } catch (error) {
+            console.error('Error fetching business details:', error);
+            Alert.alert('Error', 'Failed to load business details');
+        } finally {
+            setIsFetching(false);
+        }
+    };
+
+    const updateField = (field: keyof BusinessInput, value: string) => {
         setForm((prev) => ({ ...prev, [field]: value }));
+        if (errors[field]) {
+            setErrors((prev) => ({ ...prev, [field]: '' }));
+        }
+    };
+
+    const validateForm = (): boolean => {
+        const newErrors: { [key: string]: string } = {};
+
+        if (!form.name.trim()) newErrors.name = 'Business name is required';
+
+        if (form.gstin && !validateGSTIN(form.gstin)) {
+            newErrors.gstin = 'Invalid GSTIN format';
+        }
+
+        if (form.email && !validateEmail(form.email)) {
+            newErrors.email = 'Invalid email address';
+        }
+
+        if (form.phone && !validatePhone(form.phone)) {
+            newErrors.phone = 'Invalid phone number (10 digits)';
+        }
+
+        if (form.pincode && form.pincode.length !== 6) {
+            newErrors.pincode = 'PIN Code must be 6 digits';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = async () => {
-        if (!form.name.trim()) {
-            // Show error
-            return;
-        }
+        if (!validateForm()) return;
 
         setIsLoading(true);
         try {
-            // TODO: Call API to create business
-            // const response = await api.post('/business', form);
+            const payload: BusinessInput = {
+                ...form,
+                logoUrl: logoUrl || undefined,
+            };
 
-            // Mock success
-            dispatch(setBusiness({
-                id: '1',
-                name: form.name,
-                gstin: form.gstin || undefined,
-            }));
-        } catch (error) {
-            console.error('Error creating business:', error);
+            const response = await businessApi.upsertBusiness(payload);
+
+            if (response.success && response.data) {
+                dispatch(setBusiness({
+                    id: response.data.id,
+                    name: response.data.name,
+                    gstin: response.data.gstin,
+                }));
+
+                if (isEditing) {
+                    Alert.alert('Success', 'Profile updated successfully', [
+                        { text: 'OK', onPress: () => navigation.goBack() }
+                    ]);
+                } else {
+                    Alert.alert('Success', 'Business setup complete!', [
+                        { text: 'OK', onPress: () => navigation.replace('Main') } // Navigate to Main instead of MainTabs if Main is the stack name
+                    ]);
+                }
+            } else {
+                Alert.alert('Error', response.message || 'Failed to update business profile');
+            }
+
+        } catch (error: any) {
+            console.error('Error saving business:', error);
+            const msg = error.response?.data?.message || 'Something went wrong';
+            Alert.alert('Error', msg);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const isValid = form.name.trim().length > 0;
+    if (isFetching) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={COLORS.primary} />
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -66,10 +169,27 @@ const BusinessSetupScreen: React.FC<Props> = () => {
                 <View style={styles.content}>
                     {/* Header */}
                     <View style={styles.header}>
-                        <Text style={styles.title}>Set up your business</Text>
-                        <Text style={styles.subtitle}>
-                            Enter your business details to start creating invoices
+                        <Text style={styles.title}>
+                            {isEditing ? 'Update Profile' : 'Set up your business'}
                         </Text>
+                        <Text style={styles.subtitle}>
+                            {isEditing
+                                ? 'Update your business details'
+                                : 'Enter your business details to start creating invoices'}
+                        </Text>
+                    </View>
+
+                    {/* Logo Placeholder */}
+                    <View style={styles.logoSection}>
+                        <Text style={styles.label}>Logo URL (Optional)</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="https://example.com/logo.png"
+                            placeholderTextColor={COLORS.textMuted}
+                            value={logoUrl}
+                            onChangeText={setLogoUrl}
+                            autoCapitalize="none"
+                        />
                     </View>
 
                     {/* Form */}
@@ -77,18 +197,19 @@ const BusinessSetupScreen: React.FC<Props> = () => {
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Business Name *</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, errors.name && styles.inputError]}
                                 placeholder="Enter your business name"
                                 placeholderTextColor={COLORS.textMuted}
                                 value={form.name}
                                 onChangeText={(v) => updateField('name', v)}
                             />
+                            {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
                         </View>
 
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>GSTIN (Optional)</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, errors.gstin && styles.inputError]}
                                 placeholder="22AAAAA0000A1Z5"
                                 placeholderTextColor={COLORS.textMuted}
                                 value={form.gstin}
@@ -96,15 +217,19 @@ const BusinessSetupScreen: React.FC<Props> = () => {
                                 maxLength={15}
                                 autoCapitalize="characters"
                             />
-                            <Text style={styles.helperText}>
-                                15-digit GST Identification Number
-                            </Text>
+                            {errors.gstin ? (
+                                <Text style={styles.errorText}>{errors.gstin}</Text>
+                            ) : (
+                                <Text style={styles.helperText}>
+                                    15-digit GST Identification Number
+                                </Text>
+                            )}
                         </View>
 
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Phone Number</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, errors.phone && styles.inputError]}
                                 placeholder="Business phone number"
                                 placeholderTextColor={COLORS.textMuted}
                                 keyboardType="phone-pad"
@@ -112,12 +237,13 @@ const BusinessSetupScreen: React.FC<Props> = () => {
                                 onChangeText={(v) => updateField('phone', v)}
                                 maxLength={10}
                             />
+                            {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
                         </View>
 
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Email</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, errors.email && styles.inputError]}
                                 placeholder="business@example.com"
                                 placeholderTextColor={COLORS.textMuted}
                                 keyboardType="email-address"
@@ -125,6 +251,7 @@ const BusinessSetupScreen: React.FC<Props> = () => {
                                 value={form.email}
                                 onChangeText={(v) => updateField('email', v)}
                             />
+                            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
                         </View>
 
                         <View style={styles.inputGroup}>
@@ -152,7 +279,7 @@ const BusinessSetupScreen: React.FC<Props> = () => {
                             <View style={[styles.inputGroup, styles.halfInput]}>
                                 <Text style={styles.label}>PIN Code</Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, errors.pincode && styles.inputError]}
                                     placeholder="PIN Code"
                                     placeholderTextColor={COLORS.textMuted}
                                     keyboardType="number-pad"
@@ -160,6 +287,7 @@ const BusinessSetupScreen: React.FC<Props> = () => {
                                     onChangeText={(v) => updateField('pincode', v)}
                                     maxLength={6}
                                 />
+                                {errors.pincode && <Text style={styles.errorText}>{errors.pincode}</Text>}
                             </View>
                         </View>
 
@@ -177,13 +305,17 @@ const BusinessSetupScreen: React.FC<Props> = () => {
 
                     {/* Submit Button */}
                     <TouchableOpacity
-                        style={[styles.button, !isValid && styles.buttonDisabled]}
+                        style={[styles.button, isLoading && styles.buttonDisabled]}
                         onPress={handleSubmit}
-                        disabled={!isValid || isLoading}
+                        disabled={isLoading}
                     >
-                        <Text style={styles.buttonText}>
-                            {isLoading ? 'Creating...' : 'Continue'}
-                        </Text>
+                        {isLoading ? (
+                            <ActivityIndicator color={COLORS.white} />
+                        ) : (
+                            <Text style={styles.buttonText}>
+                                {isEditing ? 'Update Profile' : 'Save & Continue'}
+                            </Text>
+                        )}
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -195,6 +327,11 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.background,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     scrollView: {
         flex: 1,
@@ -215,6 +352,9 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: FONT_SIZES.md,
         color: COLORS.textSecondary,
+    },
+    logoSection: {
+        marginBottom: SPACING.lg,
     },
     form: {
         marginBottom: SPACING.xl,
@@ -238,6 +378,14 @@ const styles = StyleSheet.create({
         color: COLORS.text,
         fontSize: FONT_SIZES.md,
     },
+    inputError: {
+        borderColor: COLORS.error,
+    },
+    errorText: {
+        color: COLORS.error,
+        fontSize: FONT_SIZES.xs,
+        marginTop: SPACING.xs,
+    },
     helperText: {
         fontSize: FONT_SIZES.xs,
         color: COLORS.textMuted,
@@ -259,6 +407,7 @@ const styles = StyleSheet.create({
     },
     buttonDisabled: {
         backgroundColor: COLORS.surfaceLight,
+        opacity: 0.7,
     },
     buttonText: {
         color: COLORS.white,

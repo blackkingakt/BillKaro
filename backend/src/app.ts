@@ -7,6 +7,7 @@ import { config } from './config';
 
 // Import routes
 import authRoutes from './routes/authRoutes';
+import businessRoutes from './routes/businessRoutes';
 
 // Initialize Express app
 const app: Application = express();
@@ -66,7 +67,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/v1/auth', authRateLimiter, authRoutes);
-// app.use('/api/v1/business', businessRoutes);
+app.use('/api/v1/business', businessRoutes);
 // app.use('/api/v1/customers', customerRoutes);
 // app.use('/api/v1/products', productRoutes);
 // app.use('/api/v1/invoices', invoiceRoutes);

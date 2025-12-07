@@ -12,6 +12,7 @@ import MainNavigator from './MainNavigator';
 
 // Business Setup
 import BusinessSetupScreen from '../screens/business/BusinessSetupScreen';
+import BusinessProfileScreen from '../screens/business/BusinessProfileScreen';
 
 export type RootStackParamList = {
     // Auth
@@ -19,7 +20,8 @@ export type RootStackParamList = {
     OTPVerification: { phone: string; countryCode: string };
 
     // Business Setup
-    BusinessSetup: undefined;
+    BusinessSetup: { isEditing?: boolean };
+    BusinessProfile: undefined;
 
     // Main App
     Main: undefined;
@@ -49,7 +51,11 @@ const RootNavigator: React.FC = () => {
                     <Stack.Screen name="BusinessSetup" component={BusinessSetupScreen} />
                 ) : (
                     // Main App
-                    <Stack.Screen name="Main" component={MainNavigator} />
+                    <Stack.Group>
+                        <Stack.Screen name="Main" component={MainNavigator} />
+                        <Stack.Screen name="BusinessProfile" component={BusinessProfileScreen} />
+                        <Stack.Screen name="BusinessSetup" component={BusinessSetupScreen} />
+                    </Stack.Group>
                 )}
             </Stack.Navigator>
         </NavigationContainer>
